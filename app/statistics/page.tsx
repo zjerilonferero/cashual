@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { getTransactionGroups } from "@/app/actions/transaction-group";
 import { FloatingActionButton } from "../components/floating-action-button";
