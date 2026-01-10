@@ -7,7 +7,7 @@ export class Transaction extends Schema.Class<Transaction>("Transaction")({
   name: Schema.String,
   amount: Schema.Number,
   type: TransactionTypeSchema,
-  id: Schema.Number,
+  id: Schema.optional(Schema.Number),
 }) {}
 
 export type TransactionType = typeof Transaction.Type;

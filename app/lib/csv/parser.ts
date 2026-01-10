@@ -104,7 +104,10 @@ const make: CsvParserServiceInterface = {
         records,
         (record, index) =>
           Schema.decodeUnknown(Transaction)(record).pipe(
-            Effect.mapError(() => `Row ${index + 1}: validation failed`),
+            Effect.mapError((error) => {
+              console.log(error);
+              return `Row ${index + 1}: validation failed`;
+            }),
           ),
       ).pipe(
         Effect.mapError(
