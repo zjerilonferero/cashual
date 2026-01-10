@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+// export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { getTransactionGroups } from "@/app/actions/transaction-group";
@@ -13,7 +13,8 @@ function formatDate(date: Date): string {
 }
 
 export default async function StatisticsPage() {
-  const groups = await getTransactionGroups();
+  // const groups = await getTransactionGroups();
+  const groups = [];
   console.log(groups);
 
   return (
