@@ -20,6 +20,14 @@ export default async function LoginPage() {
     redirect("/");
   };
 
+  // await auth.api.signUpEmail({
+  //   body: {
+  //     name: "zjerilon",
+  //     email: "zjerilonferero@gmail.com",
+  //     password: "qazwsx123",
+  //   },
+  // });
+  //
   return (
     <main className="flex min-h-screen items-center justify-center bg-background w-full">
       <div className="container px-8">

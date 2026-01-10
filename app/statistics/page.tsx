@@ -13,8 +13,7 @@ function formatDate(date: Date): string {
 }
 
 export default async function StatisticsPage() {
-  // const groups = await getTransactionGroups();
-  const groups = [];
+  const groups = await getTransactionGroups();
   console.log(groups);
 
   return (
