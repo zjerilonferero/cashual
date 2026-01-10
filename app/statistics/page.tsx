@@ -1,4 +1,4 @@
-// export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { getTransactionGroups } from "@/app/actions/transaction-group";
