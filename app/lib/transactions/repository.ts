@@ -113,7 +113,7 @@ const make: TransactionGroupServiceInterface = {
         .reduce((sum, t) => sum + t.amount, 0);
 
       return {
-        id: groupData.id,
+        groupId: groupData.id,
         createdAt: groupData.createdAt,
         name: groupData.name,
         transactions,

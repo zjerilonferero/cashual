@@ -1,6 +1,6 @@
-import { DateTime, Effect, Layer, Option, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import { parse } from "csv-parse/sync";
-import { Transaction, CsvError } from "./schema";
+import { CsvError, CsvTransaction } from "./schema";
 import { CsvParserService, type CsvParserServiceInterface } from "./service";
 import { db } from "@/app/lib/database";
 import { transaction } from "@/app/lib/database/schemas/transaction-schema";
@@ -25,42 +25,6 @@ function detectDelimiter(content: string): string {
   return bestDelimiter;
 }
 
-function formatDateToDutch(dateStr: string): string {
-  const year = parseInt(dateStr.slice(0, 4), 10);
-  const month = parseInt(dateStr.slice(4, 6), 10);
-  const day = parseInt(dateStr.slice(6, 8), 10);
-
-  const dateTime = DateTime.make({ year, month, day });
-
-  if (Option.isNone(dateTime)) {
-    throw new Error(`Invalid date: ${dateStr}`);
-  }
-
-  return DateTime.format(dateTime.value, {
-    locale: "nl-NL",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function parseEuropeanNumber(value: string): number {
-  return parseFloat(value.replace(",", "."));
-}
-
-function mapTransactionType(debitCredit: string): "income" | "expense" {
-  return debitCredit === "Credit" ? "income" : "expense";
-}
-
-type IngCsvRecord = Record<string, string>;
-
-type MappedRecord = {
-  date: string;
-  name: string;
-  amount: number;
-  type: "income" | "expense";
-};
-
 const make: CsvParserServiceInterface = {
   parseTransactions: (content: string, transactionGroupName: string) =>
     Effect.gen(function* () {
@@ -69,45 +33,32 @@ const make: CsvParserServiceInterface = {
 
       const delimiter = detectDelimiter(content);
 
-      const records = yield* Effect.try({
-        try: () => {
-          const transformRecord = (
-            record: IngCsvRecord,
-          ): MappedRecord | null => {
-            if (record["Name / Description"].includes("Spaarrekening")) {
-              return null;
-            }
-            return {
-              date: formatDateToDutch(record["Date"]),
-              name: record["Name / Description"],
-              amount: parseEuropeanNumber(record["Amount (EUR)"]),
-              type: mapTransactionType(record["Debit/credit"]),
-            };
-          };
-
-          return parse(content, {
+      // Parse CSV to raw records
+      const rawRecords = yield* Effect.try({
+        try: () =>
+          parse(content, {
             columns: true,
             skip_empty_lines: true,
             trim: true,
             delimiter,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            on_record: transformRecord as any,
-          }) as MappedRecord[];
-        },
+          }) as Record<string, string>[],
         catch: (error) =>
           new CsvError({
             message: `Failed to parse CSV: ${error instanceof Error ? error.message : String(error)}`,
           }),
       });
 
+      // Filter out Spaarrekening records
+      const filteredRecords = rawRecords.filter(
+        (record) => !record["Name / Description"]?.includes("Spaarrekening")
+      );
+
+      // Decode using Effect Schema transformations
       const validatedTransactions = yield* Effect.validateAll(
-        records,
+        filteredRecords,
         (record, index) =>
-          Schema.decodeUnknown(Transaction)(record).pipe(
-            Effect.mapError((error) => {
-              console.log(error);
-              return `Row ${index + 1}: validation failed`;
-            }),
+          Schema.decodeUnknown(CsvTransaction)(record).pipe(
+            Effect.mapError((error) => `Row ${index + 1}: ${error.message}`),
           ),
       ).pipe(
         Effect.mapError(
@@ -115,73 +66,64 @@ const make: CsvParserServiceInterface = {
         ),
       );
 
-      // Create transaction group first
+      // Create transaction group
       const insertedGroup = yield* Effect.tryPromise({
         try: () =>
           db
             .insert(transactionGroup)
             .values({ userId: user.id, name: transactionGroupName })
-            .returning({ id: transactionGroup.id }),
+            .returning({
+              id: transactionGroup.id,
+              createdAt: transactionGroup.createdAt,
+              name: transactionGroup.name,
+            }),
         catch: (error) =>
           new CsvError({
             message: `Failed to create transaction group: ${error instanceof Error ? error.message : String(error)}`,
           }),
       });
 
-      const groupId = insertedGroup[0].id;
+      const group = insertedGroup[0];
 
-      yield* Effect.tryPromise({
+      // Insert transactions and get them back with IDs
+      const insertedTransactions = yield* Effect.tryPromise({
         try: () =>
-          db.insert(transaction).values(
-            validatedTransactions.map((validatedTransaction) => ({
-              userId: user.id,
-              groupId,
-              name: validatedTransaction.name,
-              date: validatedTransaction.date,
-              amount: validatedTransaction.amount,
-              type: validatedTransaction.type,
-            })),
-          ),
+          db
+            .insert(transaction)
+            .values(
+              validatedTransactions.map((validatedTransaction) => ({
+                userId: user.id,
+                groupId: group.id,
+                name: validatedTransaction.name,
+                date: validatedTransaction.date,
+                amount: validatedTransaction.amount,
+                type: validatedTransaction.type,
+              })),
+            )
+            .returning({
+              id: transaction.id,
+              name: transaction.name,
+              date: transaction.date,
+              amount: transaction.amount,
+              type: transaction.type,
+            }),
         catch: (error) =>
           new CsvError({
             message: `Failed to save transactions: ${error instanceof Error ? error.message : String(error)}`,
           }),
       });
 
-      const transactionsDTO = yield* Effect.forEach(
-        validatedTransactions,
-        (validatedTransaction) =>
-          Schema.encode(Transaction)(validatedTransaction),
-      ).pipe(
-        Effect.mapError(
-          (error) =>
-            new CsvError({
-              message: `Encoding failed: ${error.message}`,
-            }),
-        ),
-      );
-
       return {
-        groupId,
-        transactions: transactionsDTO,
-        totalExpense: validatedTransactions
-          .filter(
-            (validatedTransaction) => validatedTransaction.type === "expense",
-          )
-          .reduce(
-            (total, validatedTransaction) =>
-              total + validatedTransaction.amount,
-            0,
-          ),
-        totalIncome: validatedTransactions
-          .filter(
-            (validatedTransaction) => validatedTransaction.type === "income",
-          )
-          .reduce(
-            (total, validatedTransaction) =>
-              total + validatedTransaction.amount,
-            0,
-          ),
+        groupId: group.id,
+        createdAt: group.createdAt,
+        name: group.name,
+        transactions: insertedTransactions,
+        totalExpense: insertedTransactions
+          .filter((insertedTransaction) => insertedTransaction.type === "expense")
+          .reduce((total, insertedTransaction) => total + insertedTransaction.amount, 0),
+        totalIncome: insertedTransactions
+          .filter((insertedTransaction) => insertedTransaction.type === "income")
+          .reduce((total, insertedTransaction) => total + insertedTransaction.amount, 0),
       };
     }),
 };

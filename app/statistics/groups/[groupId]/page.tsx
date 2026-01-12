@@ -4,6 +4,7 @@ import { HelpCircle } from "feather-icons-react";
 import classNames from "classnames";
 import TransactionsList from "@/app/components/transactions-list/transactions-list";
 import IncomeExpenseChart from "@/app/components/income-expense-chart/income-expense-chart";
+import { Suspense } from "react";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;

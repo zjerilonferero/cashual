@@ -3,7 +3,7 @@
 import { Effect } from "effect";
 import { CsvParserService } from "@/app/lib/csv/service";
 import { runtime } from "@/app/lib/csv/runtime";
-import { TransactionResponseDTO } from "@/app/lib/csv/schema";
+import type { TransactionGroupResponseDTO } from "@/app/lib/transactions/schema";
 
 /**
  * Server Action to parse CSV file containing transactions
@@ -13,9 +13,9 @@ import { TransactionResponseDTO } from "@/app/lib/csv/schema";
  * @returns Promise resolving to parsed transactions as plain objects (DTOs)
  */
 export async function parseCsvAction(
-  _: TransactionResponseDTO | null,
+  _: TransactionGroupResponseDTO | null,
   formData: FormData,
-): Promise<TransactionResponseDTO> {
+): Promise<TransactionGroupResponseDTO> {
   const file = formData.get("file") as File;
   const transactionGroupName = formData.get("transactionGroupName") as string;
   const content = await file.text();

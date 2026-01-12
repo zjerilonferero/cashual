@@ -1,18 +1,21 @@
 import { Context, Effect } from "effect";
-import type { TransactionGroupDTO, TransactionGroupError } from "./schema";
+import type {
+  TransactionGroupError,
+  TransactionGroupResponseDTO,
+  TransactionGroupSummaryDTO,
+} from "./schema";
 import type { UnauthorizedError, UserService } from "@/app/lib/user";
-import { TransactionResponseDTO } from "../csv/schema";
 
 export interface TransactionGroupServiceInterface {
   readonly getAll: () => Effect.Effect<
-    TransactionGroupDTO[],
+    TransactionGroupSummaryDTO[],
     TransactionGroupError | UnauthorizedError,
     UserService
   >;
   readonly getById: (
     groupId: number,
   ) => Effect.Effect<
-    TransactionResponseDTO,
+    TransactionGroupResponseDTO,
     TransactionGroupError | UnauthorizedError,
     UserService
   >;

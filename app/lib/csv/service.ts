@@ -1,5 +1,6 @@
 import { Context, Effect } from "effect";
-import type { CsvError, TransactionResponseDTO } from "./schema";
+import type { CsvError } from "./schema";
+import type { TransactionGroupResponseDTO } from "@/app/lib/transactions/schema";
 import type { UnauthorizedError, UserService } from "@/app/lib/user";
 
 /**
@@ -11,7 +12,7 @@ export interface CsvParserServiceInterface {
     content: string,
     transactionGroupName: string,
   ) => Effect.Effect<
-    TransactionResponseDTO,
+    TransactionGroupResponseDTO,
     CsvError | UnauthorizedError,
     UserService
   >;

@@ -1,14 +1,13 @@
 "use client";
 
 import { useLongPress } from "@/app/hooks/useLongPress";
-import { TransactionDTO } from "@/app/lib/csv/schema";
+import type { TransactionDTO } from "@/app/lib/transactions/schema";
 import classNames from "classnames";
 import { Check, HelpCircle } from "feather-icons-react";
 import { useOptimistic, useState } from "react";
 import { Checkbox, Label } from "radix-ui";
 import { FloatingActionDeleteButton } from "../floating-action-button";
 import { deleteTransactionByIds } from "@/app/actions/transaction-group";
-import { transaction } from "@/app/lib/database/schemas/transaction-schema";
 
 interface TransactionProps extends TransactionDTO {
   onLongPress: () => void;
@@ -87,7 +86,7 @@ function Transacation({
 }
 
 interface TransactionsListProps {
-  transactions: TransactionDTO[];
+  transactions: readonly TransactionDTO[];
 }
 
 function TransactionsList({ transactions }: TransactionsListProps) {
