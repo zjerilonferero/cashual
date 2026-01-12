@@ -21,15 +21,14 @@ export default async function LoginPage() {
 
   // await auth.api.signUpEmail({
   //   body: {
-  //     name: "zjerilon",
-  //     email: "zjerilonferero@gmail.com",
-  //     password: "qazwsx123",
+  //     name: "Linde",
+  //     email: "linde.zoetelief@upcmail.nl",
+  //     password: "linde",
   //   },
   // });
-  //
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background w-full">
-      <div className="container px-8">
+    <div className="container items-center flex w-full px-8">
+      <div className="w-full">
         <form action={loginUser} className="space-y-5">
           <Input
             name="email"
@@ -56,6 +55,6 @@ export default async function LoginPage() {
           </button>
         </form>
       </div>
-    </main>
+    </div>
   );
 }

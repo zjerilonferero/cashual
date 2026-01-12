@@ -10,5 +10,9 @@ export default async function Home() {
     return <div>Not authenticated</div>;
   }
 
-  return <div className="h-2000 w-full"></div>;
+  return (
+    <div className="h-2000 w-full">
+      <h1>Welcome back {session.user.name},</h1>
+    </div>
+  );
 }
