@@ -28,7 +28,7 @@ function FloatingActionButton() {
 
   return (
     <button
-      className={classNames("absolute bottom-2 right-10 opacity-50", {
+      className={classNames("fixed bottom-24 right-10 opacity-50", {
         "opacity-100": isMenuActive,
       })}
     >

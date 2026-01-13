@@ -21,9 +21,9 @@ export default async function LoginPage() {
 
   // await auth.api.signUpEmail({
   //   body: {
-  //     name: "Linde",
-  //     email: "linde.zoetelief@upcmail.nl",
-  //     password: "linde",
+  //     name: "Zjerlondy Ferero",
+  //     email: "londymartina@gmail.com",
+  //     password: "qazwsx123",
   //   },
   // });
   return (

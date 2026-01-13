@@ -26,7 +26,8 @@ export class TransactionGroupResponse extends Schema.Class<TransactionGroupRespo
   name: Schema.String,
 }) {}
 
-export type TransactionGroupResponseDTO = typeof TransactionGroupResponse.Encoded;
+export type TransactionGroupResponseDTO =
+  typeof TransactionGroupResponse.Encoded;
 
 // TransactionGroup summary (for listing groups without transactions)
 export class TransactionGroupSummary extends Schema.Class<TransactionGroupSummary>(
@@ -35,6 +36,8 @@ export class TransactionGroupSummary extends Schema.Class<TransactionGroupSummar
   id: Schema.Number,
   createdAt: Schema.DateFromSelf,
   name: Schema.String,
+  totalIncome: Schema.Number,
+  totalExpense: Schema.Number,
 }) {}
 
 export type TransactionGroupSummaryDTO = typeof TransactionGroupSummary.Encoded;

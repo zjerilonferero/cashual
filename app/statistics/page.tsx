@@ -15,12 +15,23 @@ export default async function StatisticsPage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Transaction Groups</h1>
-      <TransactionsGroupList />
-      <Suspense>
-        <FloatingActionButton />
-      </Suspense>
+    <div className="flex-1 flex flex-col px-6 py-6 max-w-full">
+      <div className="w-full flex-1 flex flex-col">
+        <div className="mb-10">
+          <h1 className="text-3xl font-semibold tracking-tight mb-2">
+            Transaction Groups
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            View and manage your imported transactions
+          </p>
+        </div>
+
+        <TransactionsGroupList />
+
+        <Suspense>
+          <FloatingActionButton />
+        </Suspense>
+      </div>
     </div>
   );
 }

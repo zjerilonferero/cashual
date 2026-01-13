@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins&display=swap");
 @import "tailwindcss";
+@import "tw-animate-css";
 
 :root {
   --background: oklch(0.13 0 0);
@@ -139,5 +140,34 @@
   .animate-progress {
     transform-origin: left;
     animation: progress-expand 0.7s ease-out both;
+  }
+
+  @keyframes progress-indeterminate {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
+
+  @keyframes checkmark-scale {
+    0% {
+      transform: scale(0);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .animate-progress-indeterminate {
+    animation: progress-indeterminate 1.2s ease-in-out infinite;
+  }
+
+  .animate-checkmark {
+    animation: checkmark-scale 0.4s ease-out forwards;
   }
 }

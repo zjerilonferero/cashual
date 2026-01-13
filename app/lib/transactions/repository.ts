@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/app/lib/database";
 import { transactionGroup } from "@/app/lib/database/schemas/transaction-group-schema";
 import { transaction } from "@/app/lib/database/schemas/transaction-schema";
@@ -23,9 +23,13 @@ const make: TransactionGroupServiceInterface = {
               id: transactionGroup.id,
               createdAt: transactionGroup.createdAt,
               name: transactionGroup.name,
+              totalIncome: sql<number>`coalesce(sum(case when ${transaction.type} = 'income' then ${transaction.amount} else 0 end), 0)`,
+              totalExpense: sql<number>`coalesce(sum(case when ${transaction.type} = 'expense' then ${transaction.amount} else 0 end), 0)`,
             })
             .from(transactionGroup)
+            .leftJoin(transaction, eq(transaction.groupId, transactionGroup.id))
             .where(eq(transactionGroup.userId, user.id))
+            .groupBy(transactionGroup.id)
             .orderBy(transactionGroup.createdAt),
         catch: (error) =>
           new TransactionGroupError({

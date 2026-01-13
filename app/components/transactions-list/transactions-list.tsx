@@ -8,6 +8,9 @@ import { useOptimistic, useState } from "react";
 import { Checkbox, Label } from "radix-ui";
 import { FloatingActionDeleteButton } from "../floating-action-button";
 import { deleteTransactionByIds } from "@/app/actions/transaction-group";
+import TransactionGroupLoading, {
+  TransactionSkeleton,
+} from "@/app/statistics/groups/[groupId]/loading";
 
 interface TransactionProps extends TransactionDTO {
   onLongPress: () => void;
