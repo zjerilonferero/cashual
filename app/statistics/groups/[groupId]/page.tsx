@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
 import { getTransactionGroupById } from "@/app/actions/transaction-group";
-import { HelpCircle } from "feather-icons-react";
-import classNames from "classnames";
+import { getCategories } from "@/app/actions/category";
 import TransactionsList from "@/app/components/transactions-list/transactions-list";
 import IncomeExpenseChart from "@/app/components/income-expense-chart/income-expense-chart";
-import { Suspense } from "react";
+import { ActionMenu } from "@/app/components/action-menu";
 
 type PageProps = {
   params: Promise<{ groupId: string }>;
@@ -33,12 +32,19 @@ export default async function TransactionGroupPage({ params }: PageProps) {
     notFound();
   }
 
+  const categories = await getCategories();
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-2">{group.name}</h1>
-      <p className="text-gray-500 text-sm mb-6">
-        {formatDate(group.createdAt)}
-      </p>
+    <div className="p-6 overflow-x-hidden">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">{group.name}</h1>
+          <p className="text-gray-500 text-sm mb-6">
+            {formatDate(group.createdAt)}
+          </p>
+        </div>
+        <ActionMenu />
+      </div>
 
       <h2 className="mb-4">Summary</h2>
       <div className="flex flex-col mb-4">
@@ -59,7 +65,10 @@ export default async function TransactionGroupPage({ params }: PageProps) {
       </div>
 
       <h2 className="my-4">My Transactions</h2>
-      <TransactionsList transactions={group.transactions} />
+      <TransactionsList
+        transactions={group.transactions}
+        categories={categories}
+      />
     </div>
   );
 }

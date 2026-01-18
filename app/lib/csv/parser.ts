@@ -1,11 +1,12 @@
 import { Effect, Layer, Schema } from "effect";
 import { parse } from "csv-parse/sync";
-import { CsvError, CsvTransaction } from "./schema";
+import { CsvError, CsvTransaction, type CsvTransactionDTO } from "./schema";
 import { CsvParserService, type CsvParserServiceInterface } from "./service";
 import { db } from "@/app/lib/database";
 import { transaction } from "@/app/lib/database/schemas/transaction-schema";
 import { transactionGroup } from "@/app/lib/database/schemas/transaction-group-schema";
 import { UserService } from "@/app/lib/user";
+import { CategorizationService } from "@/app/lib/category";
 
 function detectDelimiter(content: string): string {
   const firstLine = content.split("\n")[0] ?? "";
@@ -30,10 +31,10 @@ const make: CsvParserServiceInterface = {
     Effect.gen(function* () {
       const userService = yield* UserService;
       const user = yield* userService.currentUser;
+      const categorizationService = yield* CategorizationService;
 
       const delimiter = detectDelimiter(content);
 
-      // Parse CSV to raw records
       const rawRecords = yield* Effect.try({
         try: () =>
           parse(content, {
@@ -48,13 +49,11 @@ const make: CsvParserServiceInterface = {
           }),
       });
 
-      // Filter out Spaarrekening records
       const filteredRecords = rawRecords.filter(
         (record) => !record["Name / Description"]?.includes("Spaarrekening")
       );
 
-      // Decode using Effect Schema transformations
-      const validatedTransactions = yield* Effect.validateAll(
+      const validatedTransactions: CsvTransactionDTO[] = yield* Effect.validateAll(
         filteredRecords,
         (record, index) =>
           Schema.decodeUnknown(CsvTransaction)(record).pipe(
@@ -66,7 +65,10 @@ const make: CsvParserServiceInterface = {
         ),
       );
 
-      // Create transaction group
+      const categoryIds = yield* categorizationService.categorize(
+        validatedTransactions.map((validatedTransaction) => validatedTransaction.name),
+      );
+
       const insertedGroup = yield* Effect.tryPromise({
         try: () =>
           db
@@ -85,45 +87,42 @@ const make: CsvParserServiceInterface = {
 
       const group = insertedGroup[0];
 
-      // Insert transactions and get them back with IDs
-      const insertedTransactions = yield* Effect.tryPromise({
+      yield* Effect.tryPromise({
         try: () =>
           db
             .insert(transaction)
             .values(
-              validatedTransactions.map((validatedTransaction) => ({
+              validatedTransactions.map((validatedTransaction, index) => ({
                 userId: user.id,
                 groupId: group.id,
                 name: validatedTransaction.name,
                 date: validatedTransaction.date,
                 amount: validatedTransaction.amount,
                 type: validatedTransaction.type,
+                categoryId: categoryIds[index],
               })),
-            )
-            .returning({
-              id: transaction.id,
-              name: transaction.name,
-              date: transaction.date,
-              amount: transaction.amount,
-              type: transaction.type,
-            }),
+            ),
         catch: (error) =>
           new CsvError({
             message: `Failed to save transactions: ${error instanceof Error ? error.message : String(error)}`,
           }),
       });
 
+      const totalExpense = validatedTransactions
+        .filter((validatedTransaction) => validatedTransaction.type === "expense")
+        .reduce((total, validatedTransaction) => total + validatedTransaction.amount, 0);
+
+      const totalIncome = validatedTransactions
+        .filter((validatedTransaction) => validatedTransaction.type === "income")
+        .reduce((total, validatedTransaction) => total + validatedTransaction.amount, 0);
+
       return {
         groupId: group.id,
         createdAt: group.createdAt,
         name: group.name,
-        transactions: insertedTransactions,
-        totalExpense: insertedTransactions
-          .filter((insertedTransaction) => insertedTransaction.type === "expense")
-          .reduce((total, insertedTransaction) => total + insertedTransaction.amount, 0),
-        totalIncome: insertedTransactions
-          .filter((insertedTransaction) => insertedTransaction.type === "income")
-          .reduce((total, insertedTransaction) => total + insertedTransaction.amount, 0),
+        transactionCount: validatedTransactions.length,
+        totalExpense,
+        totalIncome,
       };
     }),
 };

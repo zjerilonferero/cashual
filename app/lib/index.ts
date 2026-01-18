@@ -1,5 +1,5 @@
 import { Effect, Layer, ManagedRuntime } from "effect";
-import { DatabaseContext, DatabaseLayer } from "./database";
+import { DatabaseLayer } from "./database";
 
 /**
  * Combine all layers for the Todo domain
@@ -20,6 +20,4 @@ export const runtime = ManagedRuntime.make(MainLayer);
 export const runEffect = <A, E>(effect: Effect.Effect<A, E>) =>
   runtime.runPromise(effect);
 
-Effect.gen(function* () {
-  const db = yield* DatabaseContext;
-});
+

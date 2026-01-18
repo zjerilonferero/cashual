@@ -18,6 +18,7 @@
 - **CSS**: Tailwind CSS v4 utility classes; use `className` prop
 - **Error Handling**: Prefer error boundaries for React errors; explicit error types
 - **Async**: Use async/await over promises; handle errors with try/catch
+- **Comments**: Avoid comments in code; code should be self-documenting through clear naming
 
 ## Project Structure
 - Next.js App Router (`app/` directory)

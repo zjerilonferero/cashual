@@ -22,6 +22,17 @@ export interface TransactionGroupServiceInterface {
   readonly deleteTransactionByIds: (
     ids: number[],
   ) => Effect.Effect<boolean, TransactionGroupError, UserService>;
+  readonly deleteTransactionGroupById: (
+    id: number,
+  ) => Effect.Effect<boolean, TransactionGroupError, UserService>;
+  readonly updateTransactionCategory: (
+    transactionId: number,
+    categoryId: number,
+  ) => Effect.Effect<boolean, TransactionGroupError | UnauthorizedError, UserService>;
+  readonly updateTransactionCategoryBatch: (
+    transactionIds: number[],
+    categoryId: number,
+  ) => Effect.Effect<boolean, TransactionGroupError | UnauthorizedError, UserService>;
 }
 
 export class TransactionGroupService extends Context.Tag(

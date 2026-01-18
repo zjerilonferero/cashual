@@ -3,6 +3,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/app/lib/database";
 import { transactionGroup } from "@/app/lib/database/schemas/transaction-group-schema";
 import { transaction } from "@/app/lib/database/schemas/transaction-schema";
+import { category } from "@/app/lib/database/schemas/category-schema";
 import { UserService } from "@/app/lib/user";
 import {
   TransactionGroupService,
@@ -70,7 +71,6 @@ const make: TransactionGroupServiceInterface = {
 
       const groupData = group[0];
 
-      // Verify the group belongs to the current user
       const groupWithUser = yield* Effect.tryPromise({
         try: () =>
           db
@@ -99,8 +99,14 @@ const make: TransactionGroupServiceInterface = {
               date: transaction.date,
               amount: transaction.amount,
               type: transaction.type,
+              category: {
+                id: category.id,
+                name: category.name,
+                color: category.color,
+              },
             })
             .from(transaction)
+            .innerJoin(category, eq(transaction.categoryId, category.id))
             .where(eq(transaction.groupId, groupId)),
         catch: (error) =>
           new TransactionGroupError({
@@ -126,19 +132,106 @@ const make: TransactionGroupServiceInterface = {
       };
     }),
 
-  deleteTransactionByIds: (ids: number[]) => {
-    return Effect.gen(function* () {
+  deleteTransactionByIds: (ids: number[]) =>
+    Effect.gen(function* () {
       yield* Effect.tryPromise({
-        try: () => {
-          return db.delete(transaction).where(inArray(transaction.id, ids));
-        },
-        catch(error) {
-          return new TransactionGroupError({ message: String(error) });
-        },
+        try: () => db.delete(transaction).where(inArray(transaction.id, ids)),
+        catch: (error) =>
+          new TransactionGroupError({ message: String(error) }),
       });
       return true;
-    });
-  },
+    }),
+
+  deleteTransactionGroupById: (id: number) =>
+    Effect.gen(function* () {
+      yield* Effect.tryPromise({
+        try: () => db.delete(transactionGroup).where(eq(transactionGroup.id, id)),
+        catch: (error) =>
+          new TransactionGroupError({ message: String(error) }),
+      });
+      return true;
+    }),
+
+  updateTransactionCategory: (transactionId: number, categoryId: number) =>
+    Effect.gen(function* () {
+      const userService = yield* UserService;
+      const user = yield* userService.currentUser;
+
+      const existing = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({ userId: transaction.userId })
+            .from(transaction)
+            .where(eq(transaction.id, transactionId))
+            .limit(1),
+        catch: (error) =>
+          new TransactionGroupError({
+            message: `Failed to fetch transaction: ${error instanceof Error ? error.message : String(error)}`,
+          }),
+      });
+
+      if (existing.length === 0 || existing[0].userId !== user.id) {
+        return yield* Effect.fail(
+          new TransactionGroupError({ message: "Transaction not found" }),
+        );
+      }
+
+      yield* Effect.tryPromise({
+        try: () =>
+          db
+            .update(transaction)
+            .set({ categoryId })
+            .where(eq(transaction.id, transactionId)),
+        catch: (error) =>
+          new TransactionGroupError({
+            message: `Failed to update transaction category: ${error instanceof Error ? error.message : String(error)}`,
+          }),
+      });
+
+      return true;
+    }),
+
+  updateTransactionCategoryBatch: (transactionIds: number[], categoryId: number) =>
+    Effect.gen(function* () {
+      const userService = yield* UserService;
+      const user = yield* userService.currentUser;
+
+      const existing = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({ id: transaction.id, userId: transaction.userId })
+            .from(transaction)
+            .where(inArray(transaction.id, transactionIds)),
+        catch: (error) =>
+          new TransactionGroupError({
+            message: `Failed to fetch transactions: ${error instanceof Error ? error.message : String(error)}`,
+          }),
+      });
+
+      const userTransactionIds = existing
+        .filter((t) => t.userId === user.id)
+        .map((t) => t.id);
+
+      if (userTransactionIds.length === 0) {
+        return yield* Effect.fail(
+          new TransactionGroupError({ message: "No transactions found" }),
+        );
+      }
+
+      yield* Effect.tryPromise({
+        try: () =>
+          db
+            .update(transaction)
+            .set({ categoryId })
+            .where(inArray(transaction.id, userTransactionIds)),
+        catch: (error) =>
+          new TransactionGroupError({
+            message: `Failed to update transaction categories: ${error instanceof Error ? error.message : String(error)}`,
+          }),
+      });
+
+      return true;
+    }),
 };
 
 export const TransactionGroupLive = Layer.succeed(

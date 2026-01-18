@@ -1,27 +1,19 @@
 import { Context, Effect } from "effect";
-import type { CsvError } from "./schema";
-import type { TransactionGroupResponseDTO } from "@/app/lib/transactions/schema";
+import type { CsvError, CsvParseResultDTO } from "./schema";
 import type { UnauthorizedError, UserService } from "@/app/lib/user";
+import type { CategoryError, CategorizationService } from "@/app/lib/category";
 
-/**
- * CsvParserService Interface
- * Defines the contract for CSV parsing operations
- */
 export interface CsvParserServiceInterface {
   readonly parseTransactions: (
     content: string,
     transactionGroupName: string,
   ) => Effect.Effect<
-    TransactionGroupResponseDTO,
-    CsvError | UnauthorizedError,
-    UserService
+    CsvParseResultDTO,
+    CsvError | UnauthorizedError | CategoryError,
+    UserService | CategorizationService
   >;
 }
 
-/**
- * Context Tag for CsvParserService
- * Enables dependency injection in Effect programs
- */
 export class CsvParserService extends Context.Tag("CsvParserService")<
   CsvParserService,
   CsvParserServiceInterface

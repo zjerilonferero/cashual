@@ -3,6 +3,17 @@ import { Data, Schema } from "effect";
 // Base transaction type schema
 export const TransactionTypeSchema = Schema.Literal("income", "expense");
 
+// Embedded category info for display (lightweight, no user/system details)
+export class TransactionCategory extends Schema.Class<TransactionCategory>(
+  "TransactionCategory",
+)({
+  id: Schema.Number,
+  name: Schema.String,
+  color: Schema.NullOr(Schema.String),
+}) {}
+
+export type TransactionCategoryDTO = typeof TransactionCategory.Encoded;
+
 // Transaction with required id (persisted in database)
 export class Transaction extends Schema.Class<Transaction>("Transaction")({
   id: Schema.Number,
@@ -10,6 +21,7 @@ export class Transaction extends Schema.Class<Transaction>("Transaction")({
   name: Schema.String,
   amount: Schema.Number,
   type: TransactionTypeSchema,
+  category: TransactionCategory,
 }) {}
 
 export type TransactionDTO = typeof Transaction.Encoded;

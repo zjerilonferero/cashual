@@ -1,5 +1,5 @@
 import { Data, DateTime, Option, ParseResult, Schema } from "effect";
-import { Transaction, TransactionTypeSchema } from "@/app/lib/transactions/schema";
+import { TransactionTypeSchema } from "@/app/lib/transactions/schema";
 
 export class CsvError extends Data.TaggedError("CsvError")<{
   message: string;
@@ -67,13 +67,18 @@ const CsvRecord = Schema.Struct({
   "Debit/credit": TransactionTypeFromCsv,
 });
 
-// Derive schema from Transaction, omitting id
-const TransactionWithoutId = Transaction.pipe(Schema.omit("id"));
+// Parsed CSV transaction (without id or category - these are added during insert)
+const TransactionFromCsv = Schema.Struct({
+  date: Schema.String,
+  name: Schema.String,
+  amount: Schema.Number,
+  type: TransactionTypeSchema,
+});
 
 // Transform CSV field names to Transaction field names
 export const CsvTransaction = Schema.transform(
   CsvRecord,
-  TransactionWithoutId,
+  TransactionFromCsv,
   {
     decode: (csvRecord) => ({
       date: csvRecord["Date"],
@@ -89,3 +94,17 @@ export const CsvTransaction = Schema.transform(
     }),
   }
 );
+
+export type CsvTransactionDTO = typeof TransactionFromCsv.Encoded;
+
+// Response from CSV parsing (simplified - page will re-fetch with JOINs)
+export class CsvParseResult extends Schema.Class<CsvParseResult>("CsvParseResult")({
+  groupId: Schema.Number,
+  name: Schema.String,
+  createdAt: Schema.DateFromSelf,
+  transactionCount: Schema.Number,
+  totalIncome: Schema.Number,
+  totalExpense: Schema.Number,
+}) {}
+
+export type CsvParseResultDTO = typeof CsvParseResult.Encoded;

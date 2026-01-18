@@ -1,13 +1,9 @@
 import { Effect, Layer, ManagedRuntime } from "effect";
-import { CsvParserLive } from "./parser";
 import { UserService, UnauthorizedError } from "@/app/lib/user";
 import { auth } from "@/app/lib/auth";
 import { headers } from "next/headers";
-import {
-  SystemCategoryLive,
-  CategoryLive,
-  CategorizationLive,
-} from "@/app/lib/category";
+import { SystemCategoryLive, CategoryLive } from "./repository";
+import { CategorizationLive } from "./categorization";
 import {
   SystemCategoryRuleLive,
   CategoryRuleLive,
@@ -16,12 +12,8 @@ import {
 const UserLive = Layer.succeed(UserService, {
   currentUser: Effect.tryPromise({
     try: async () => {
-      const session = await auth.api.getSession({
-        headers: await headers(),
-      });
-      if (!session?.user) {
-        throw new Error("Not authenticated");
-      }
+      const session = await auth.api.getSession({ headers: await headers() });
+      if (!session?.user) throw new Error("Not authenticated");
       return {
         id: session.user.id,
         name: session.user.name,
@@ -39,7 +31,7 @@ const RepositoryLayers = Layer.mergeAll(
   CategoryRuleLive,
 );
 
-const MainLayer = Layer.mergeAll(CsvParserLive, CategorizationLive).pipe(
+const MainLayer = CategorizationLive.pipe(
   Layer.provideMerge(RepositoryLayers),
   Layer.provideMerge(UserLive),
 );
